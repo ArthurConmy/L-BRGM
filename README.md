@@ -1,5 +1,3 @@
-Arthur's Edit
-
 &nbsp;
 &nbsp;
 &nbsp;
@@ -14,7 +12,6 @@ Arthur's Edit
 ### R. Marinescu, D. Moyer, P. Golland
 
 This repository is an updated implementation of BRGM in PyTorch. It also includes the variational inference extension.
-Arhtur'2
 For inquiries, please create a Github issue. We will reply as soon as we can.
 
 For demos of our BRGM model, see these Colab Notebooks:
