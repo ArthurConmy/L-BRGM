@@ -1,2 +1,3 @@
 *.pkl
 *.sh
+__pycache__/
