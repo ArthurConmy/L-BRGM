@@ -1,3 +1,5 @@
+from models.FFHQInpainter import FFHQInpainter
+
 class BRGMInpainter(FFHQInpainter):
   def __init__(self, ground_truth, verbose = True, im_verbose = True):
     super().__init__(ground_truth, verbose, im_verbose)
