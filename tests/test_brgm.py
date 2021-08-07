@@ -1,5 +1,5 @@
 import unittest
-from .models.BRGMInpainter import BRGMInpainter
+from models.BRGMInpainter import BRGMInpainter
 
 class TestBRGM(unittest.TestCase):
     def test_inpainting(self):
