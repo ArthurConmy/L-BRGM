@@ -1,5 +1,5 @@
 import unittest
-from .models.BRGMInpainter import BRGMInpainter
+from models.BRGMInpainter import BRGMInpainter
 
 class TestBRGM(unittest.TestCase):
     def test_inpainting(self):
@@ -12,4 +12,4 @@ class TestBRGM(unittest.TestCase):
         print('FIX THE ISSUE WITH LPIPS NEEDING THINGS TO BE ON SAME DEVICE')
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.main()``
