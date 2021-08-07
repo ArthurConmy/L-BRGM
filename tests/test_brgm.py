@@ -8,7 +8,7 @@ class TestBRGM(unittest.TestCase):
         brgm.beta2 = 0.999
         brgm.train_model(max_steps = 20)
         loss_log = [entrr["total"] for entrr in brgm.loss_log]
-        print("Percentage DIFF from expected BRGM losses:", percentage_diff(torch.FloatTensor(loss_log), torch.load("static/brgmlosslog.pt")))
+        print("Percentage DIFF from expected BRGM losses:", percentage_diff(torch.FloatTensor(loss_log), torch.load("losslog.pt")))
         print('FIX THE ISSUE WITH LPIPS NEEDING THINGS TO BE ON SAME DEVICE')
 
 if __name__ == '__main__':
