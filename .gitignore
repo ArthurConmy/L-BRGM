@@ -1,3 +1,4 @@
 *.pkl
 *.sh
 __pycache__/
+training_outputs/
