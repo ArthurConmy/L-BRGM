@@ -4,14 +4,13 @@
 &nbsp;
 &nbsp;
 
-![diagram](https://i.imgur.com/Nb0123s.png)
+![diagram](https://i.imgur.com/z7f18Bj.jpg)
 
+# STYLEGAN-INDUCED DATA-DRIVEN REGULARIZATION FOR INVERSE PROBLEMS
+### Arthur Conmy, Subhadip Mukherjee, and Carola-Bibiane Schönlieb
 
+This repository is an implementation of the *L-BRGM* model introduced in [our paper](https://arxiv.org/abs/2110.03814).
 
-# Bayesian Image Reconstruction using Deep Generative Models
-### R. Marinescu, D. Moyer, P. Golland
-
-This repository is an updated implementation of BRGM in PyTorch. It also includes the variational inference extension.
 For inquiries, please create a Github issue. We will reply as soon as we can.
 
 For demos of our BRGM model, see these Colab Notebooks:
