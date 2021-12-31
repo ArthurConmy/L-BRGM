@@ -6,28 +6,13 @@
 
 ![diagram](https://i.imgur.com/z7f18Bj.jpg)
 
-# STYLEGAN-INDUCED DATA-DRIVEN REGULARIZATION FOR INVERSE PROBLEMS
+# StyleGAN-induced data-driven regularization for inverse problems
+<!-- # STYLEGAN-INDUCED DATA-DRIVEN REGULARIZATION FOR in PROBLEMS -->
 ### Arthur Conmy, Subhadip Mukherjee, and Carola-Bibiane Schönlieb
 
-This repository is an implementation of the *L-BRGM* model introduced in [our paper](https://arxiv.org/abs/2110.03814).
+This repository is an implementation of the *L-BRGM* model introduced in [our paper](https://arxiv.org/abs/2110.03814). It builds off the implementation of BRGM [here](https://github.com/razvanmarinescu/brgm-pytorch), which in turn is built on top of the StyleGAN2-ADA implementation in PyTorch [here](https://github.com/NVlabs/stylegan2-ada-pytorch).
 
-For inquiries, please create a Github issue. We will reply as soon as we can.
-
-For demos of our BRGM model, see these Colab Notebooks:
-  * [Tensorflow](https://colab.research.google.com/drive/1G7_CGPHZVGFWIkHOAke4HFg06-tNHIZ4?usp=sharing)
-  * [Pytorch Bayesian MAP](https://colab.research.google.com/drive/1xJAor6_Ky36gxIk6ICNP--NMBjSlYKil?usp=sharing)
-  * [Pytorch Variational Inference](https://colab.research.google.com/drive/1dDH_bV3aYPSK1ujbPg9MBYf-7_Lbhyrw?usp=sharing)
-  * **NEW**: [Try BRGM on your own image](https://colab.research.google.com/drive/1dDH_bV3aYPSK1ujbPg9MBYf-7_Lbhyrw?usp=sharing)
-
-
-## News
-
-* **Next**: More datasets and examples
-* **June 2021**: Reimplemented the method in Pytorch, and switched to StyleGAN-ADA.
-* **May 2021**: Added variational inference extension for sampling multiple solutions. Updated methods section in [arXiv paper](https://arxiv.org/abs/2012.04567). Also included qualitative comparisons against Deep Image Prior in supplement.
-* **Feb 2021**: Updated methods section in [arXiv paper](https://arxiv.org/abs/2012.04567). We now start from the full Bayesian formulation, and derive the loss function from the MAP estimate (in appendix), and show the graphical model. Code didn't change in this update.
-* **Dec 2020**: Pre-trained models now available on [MIT Dropbox](https://www.dropbox.com/sh/0rj092juxauivzv/AABQoEfvM96u1ehzqYgQoD5Va?dl=0).
-* **Nov 2020**: Uploaded article pre-print to [arXiv](https://arxiv.org/abs/2012.04567).
+Feel free to get in contact with the primary author with any issues.
 
 ## Requirements
 
