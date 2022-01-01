@@ -1,4 +1,5 @@
 import torch
+import torchvision.transforms as transforms
 
 def normalize_g_synthesised_tens(tens):
   tens = (tens.clamp(-1, 1) + 1) / 2.0
@@ -217,3 +218,5 @@ def fpath_to_pm1(fpath, dim=1024):
 #     json.dump(brgm.loss_log, f)
 # with open("brgmjson/image0full.json", "r") as f:
 #     my_dict = json.load(f)
+
+trans_to_tensor = transforms.ToTensor()

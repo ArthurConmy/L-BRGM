@@ -3,6 +3,14 @@ from abc import ABC, abstractmethod
 from utils import *
 from time import perf_counter
 import dnnlib
+import legacy
+import copy
+import os
+import numpy as np
+from bayesmap_recon import constructForwardModel, getVggFeatures, cosine_distance
+import PIL.Image as Image
+import torch.nn.functional as F
+import lpips
 
 class FFHQInpainter(torch.nn.Module, ABC):
   # see the image file in the google drive folder to check that this implementation is doing the right thing
@@ -37,10 +45,8 @@ class FFHQInpainter(torch.nn.Module, ABC):
     # # mem()
 
     self.initialise_cuda()
-    # # mem()
     self.initialise_generator()
-    # # mem()
-    self.initialise_vgg_from_global()
+    self.initialise_vgg_from_scratch() # TODO fix
     # # mem()
 
     self.initialise_wavg() # needed to set the parameter below
@@ -109,10 +115,10 @@ class FFHQInpainter(torch.nn.Module, ABC):
 
     #   self.z = 
     else:
-      w_avg_samples = w_avg_samples
+      w_avg_samples = 100
       if self.verbose: print(f'Computing W midpoint and stddev using {w_avg_samples} samples...')
-      z_samples = np.random.RandomState(123).randn(w_avg_samples, G.z_dim)
-      w_samples = G.mapping(torch.from_numpy(z_samples).to(self.device), None)  # [N, L, C]
+      z_samples = np.random.RandomState(123).randn(w_avg_samples, self.G.z_dim)
+      w_samples = self.G.mapping(torch.from_numpy(z_samples).to(self.device), None)  # [N, L, C]
       w_samples = w_samples[:, :1, :].cpu().numpy().astype(np.float32)  # [N, 1, C]
       w_avg = np.mean(w_samples, axis=0, keepdims=True)  # [1, 1, C]
       w_std = torch.tensor(np.std(w_samples, axis=0, keepdims=True), dtype=torch.float32, device=self.device)
