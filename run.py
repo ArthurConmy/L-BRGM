@@ -22,7 +22,7 @@ for i, testable in enumerate(testables):
   print(i)
   print('-'*50)
 
-  no_steps = 5
+  no_steps = 2000
 
   out_dir = f"mynew256to1024/again{i}/"
   im_string = f"256lows/{i}as1024.png"
