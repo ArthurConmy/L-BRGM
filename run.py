@@ -1,7 +1,3 @@
-# -rw-rw-r-- 1 arthur arthur  31293781 Jan  2 16:38  cloudflared-linux-amd64
-# current permissions
-# -rwxrwxr-x 1 arthur arthur  31293781 Jan  2 16:38  cloudflared-linux-amd64
-# new
 
 import os
 # from models import BRGMInpainter
