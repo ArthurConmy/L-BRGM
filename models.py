@@ -11,7 +11,7 @@ from bayesmap_recon import constructForwardModel, getVggFeatures, cosine_distanc
 import PIL.Image as Image
 import torch.nn.functional as F
 import lpips
-import ssim
+from skimage.metrics import structural_similarity as ssim
 
 class FFHQInpainter(torch.nn.Module, ABC):
   # see the image file in the google drive folder to check that this implementation is doing the right thing

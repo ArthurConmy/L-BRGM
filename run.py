@@ -1,6 +1,10 @@
 import os
 from models import BRGMInpainter
 import torch
+import json
+
+import warnings
+warnings.filterwarnings('ignore')
 
 print(f"Availability of GPU: {torch.cuda.is_available()}")
 
