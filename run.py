@@ -1,5 +1,8 @@
 import os
-from models import BRGMInpainter
+# from models import BRGMInpainter
+import torch
+print(torch.cuda.is_available())
+input("Yeah")
 
 with open("testables.txt", "r") as f:
   lines = f.readlines()
