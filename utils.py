@@ -1,5 +1,9 @@
 import torch
 import torchvision.transforms as transforms
+import matplotlib.pyplot as plt
+
+trans_to_pil = transforms.ToPILImage()
+trans_to_tensor = transforms.ToTensor()
 
 def normalize_g_synthesised_tens(tens):
   tens = (tens.clamp(-1, 1) + 1) / 2.0

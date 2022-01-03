@@ -1,7 +1,7 @@
 import torch
 from abc import ABC, abstractmethod
 from utils import *
-from time import perf_counter
+from time import perf_counter, ctime
 import dnnlib
 import legacy
 import copy
@@ -11,6 +11,7 @@ from bayesmap_recon import constructForwardModel, getVggFeatures, cosine_distanc
 import PIL.Image as Image
 import torch.nn.functional as F
 import lpips
+import ssim
 
 class FFHQInpainter(torch.nn.Module, ABC):
   # see the image file in the google drive folder to check that this implementation is doing the right thing
@@ -72,6 +73,7 @@ class FFHQInpainter(torch.nn.Module, ABC):
     # mem()
     self.initialise_metrics()
     # mem()
+    self.best_lpips = {}
 
   def old_z_init():
     self.w = torch.nn.Parameter(torch.tensor(self.w_avg.repeat([1, self.G.mapping.num_ws, 1]), dtype=torch.float32, device=self.device, requires_grad=True))    
@@ -444,8 +446,8 @@ class BRGMInpainter(FFHQInpainter):
     
     if self.step_no == self.max_steps - 1: self.loss_log[-1]["ssim"] = self.get_ssim()
     
-    if self.fname not in best_lpips or self.cur_lpips < best_lpips[self.fname] or self.step_no == self.max_steps-1:
-        best_lpips[self.fname] = self.cur_lpips
+    if self.fname not in self.best_lpips or self.cur_lpips < self.best_lpips[self.fname] or self.step_no == self.max_steps-1:
+        self.best_lpips[self.fname] = self.cur_lpips
             # print(self.fname, self.learning_rate, self.lambda_perc, self.lambda_pix, self.lambda_mse, self.lambda_norm)
         self.show_generated()
         self.save_the_image(f"{self.step_no} {ctime()}.png")
@@ -663,8 +665,8 @@ class SubhadipInpainter(FFHQInpainter):
                       "lpips" : self.cur_lpips})
                     #    "ssim" : self.get_ssim()})
 
-    if self.fname not in best_lpips or self.cur_lpips < best_lpips[self.fname] or self.step_no == 1999:
-        best_lpips[self.fname] = self.cur_lpips
+    if self.fname not in self.best_lpips or self.cur_lpips < self.best_lpips[self.fname] or self.step_no == 1999:
+        self.best_lpips[self.fname] = self.cur_lpips
         self.loss_log[-1]["ssim"] = self.get_ssim()
         if self.trial_no > 10:
             # print(self.fname, self.learning_rate, self.lambda_perc, self.lambda_pix, self.lambda_mse, self.lambda_norm)

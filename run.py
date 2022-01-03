@@ -1,9 +1,8 @@
-
 import os
-# from models import BRGMInpainter
+from models import BRGMInpainter
 import torch
-print(torch.cuda.is_available())
-input("Yeah")
+
+print(f"Availability of GPU: {torch.cuda.is_available()}")
 
 with open("testables.txt", "r") as f:
   lines = f.readlines()
