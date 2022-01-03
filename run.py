@@ -1,5 +1,13 @@
+# -rw-rw-r-- 1 arthur arthur  31293781 Jan  2 16:38  cloudflared-linux-amd64
+# current permissions
+# -rwxrwxr-x 1 arthur arthur  31293781 Jan  2 16:38  cloudflared-linux-amd64
+# new
+
 import os
-from models import BRGMInpainter
+# from models import BRGMInpainter
+import torch
+print(torch.cuda.is_available())
+input("Yeah")
 
 with open("testables.txt", "r") as f:
   lines = f.readlines()
