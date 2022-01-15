@@ -14,10 +14,7 @@ import lpips
 from skimage.metrics import structural_similarity as ssim
 
 class FFHQInpainter(torch.nn.Module, ABC):
-  # see the image file in the google drive folder to check that this implementation is doing the right thing
-  # ^?
-
-  def __init__(self, ground_truth, verbose = True, im_verbose = True, out_dir = "", hollow=False, trial_no = -1, indx = 0):
+  def __init__(self, ground_truth, verbose = True, im_verbose = True, out_dir = "", hollow=False, trial_no = -1, indx = 0, device=None):
     
     """Parameters:
     -mask is the mask of booleans describing (True) if pixels are blanked out, or not (False)
@@ -37,15 +34,15 @@ class FFHQInpainter(torch.nn.Module, ABC):
 
     if hollow: return
 
-    # # mem()
     super().__init__()
-    # # mem()
     self.initialise_logging(verbose, im_verbose)
     # # mem()
     self.initialise_hyperparams()
     # # mem()
 
-    self.initialise_cuda()
+    self.device = device
+    if self.device is None:
+      self.initialise_cuda()
     self.initialise_generator()
     self.initialise_vgg_from_scratch() # TODO fix
     # # mem()
@@ -96,7 +93,7 @@ class FFHQInpainter(torch.nn.Module, ABC):
     if self.verbose: print('Loading networks from "%s"...' % network_pkl)
     time_now = perf_counter()
     with dnnlib.util.open_url(network_pkl) as fp:
-      G = legacy.load_network_pkl(fp)['G_ema'].requires_grad_(False).to(self.device)  # type: ignore
+      G = legacy.load_network_pkl(fp)['G_ema'].requires_grad_(False) ## .to(self.device)  # type: ignore
     self.G = copy.deepcopy(G).eval().requires_grad_(False).to(self.device)  # type: ignore 
   def initialise_vgg_from_scratch(self):
     url = 'https://nvlabs-fi-cdn.nvidia.com/stylegan2-ada-pytorch/pretrained/metrics/vgg16.pt'
@@ -222,7 +219,9 @@ class FFHQInpainter(torch.nn.Module, ABC):
                               self.target)[0, :, :, :]
     save_image(merged, self.out_dir + fname)
   def save_the_image(self, fname):
-    synth_images = self.G.synthesis(self.w, noise_mode='const')  # G(w)
+    # print(self.w.get_device())
+    # print(self.G.synthesis.get_device())
+    synth_images = self.G.synthesis(self.w, noise_mode='const').detach()  # G(w)
     save_from_raw_g_synthesis(synth_images, self.out_dir + fname, False)
   def show_merged(self):
     synth_images = self.G.synthesis(self.w.detach().clone(), noise_mode='const')  # G(w)
@@ -353,7 +352,7 @@ class FFHQInpainter(torch.nn.Module, ABC):
     if save_the_merged: self.save_merged(f"testing_{ perf_counter() }.png")
     
 
-class BRGMInpainter(FFHQInpainter):
+class BRGM(FFHQInpainter):
   def __init__(self, *args, **kwargs):
     print(f"*args: {args}, **kwargs: {kwargs}")
     super().__init__(*args, **kwargs)    
@@ -536,7 +535,7 @@ class BRGMInpainter(FFHQInpainter):
 
     if save_the_merged: self.save_merged(f"testing_{ perf_counter() }.png")
     
-class SubhadipInpainter(FFHQInpainter):
+class LBRGM(FFHQInpainter):
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
 
@@ -701,8 +700,11 @@ class SubhadipInpainter(FFHQInpainter):
     # self.downres, _ = constructForwardModel("super-resolution", self.G.img_resolution, self.G.img_channels, None, self.fname, ## I guess ...
                                         #   1 / 4, 0, self.device)
     
-    self.mask = ForwardFillMask(self.device)
-    self.mask.mask = torch.load("halfmask.pt", map_location=self.device) # or halfmask.pt
+    self.downres, _ = constructForwardModel("super-resolution", self.G.img_resolution, self.G.img_channels, None, self.fname, ## I guess ...
+                                          1 / 16, 0, self.device)
+
+    # self.mask = ForwardFillMask(self.device)
+    # self.mask.mask = torch.load("halfmask.pt", map_location=self.device) # or halfmask.pt
     
     # smol_mask = torch.BoolTensor(1, 3, 1024, 1024).fill_(False)
     # smol_mask[0,:,200:500,200:500].fill_(True)

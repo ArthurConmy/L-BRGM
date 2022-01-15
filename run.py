@@ -1,42 +1,58 @@
 import os
-from models import BRGMInpainter
+import nacl
+from models import BRGM, LBRGM
 import torch
 import json
-
+import click
 import warnings
 warnings.filterwarnings('ignore')
 
-print(f"Availability of GPU: {torch.cuda.is_available()}")
+def get_testable_fpaths():
+  with open("testables.txt", "r") as f:
+    lines = f.readlines()
+    lines = [line[:-1] for line in lines]
+    lines = [f"images1024x1024/{line[:2]}000/{line}.png" for line in lines]
+    testables = lines[:-1]
+  fpaths = []
+  for i in range(len(testables)):
+    im_string = f"256lows/{i}as1024.png"
+    fpaths.append(im_string)
+  return fpaths
 
-with open("testables.txt", "r") as f:
-  lines = f.readlines()
-  lines = [line[:-1] for line in lines]
-  lines = [f"images1024x1024/{line[:2]}000/{line}.png" for line in lines]
-  testables = lines[:-1]
+@click.command()
+@click.option('--device', default=None, help='Device to train on.')
+@click.option('--fpaths', default=get_testable_fpaths(), multiple=True, help='Paths to image file.')
+@click.option('--outpath', help='Output directory to save run progress.')
+@click.option('--no_steps', default=2000, help='Number of optimization steps.')
+def run(device, fpaths, outpath, no_steps):
+  print(f"Availability of GPU: {torch.cuda.is_available()}")
+  best_lpips = {}
 
-best_lpips = {}
-device='cpu'
+  if not os.path.exists(outpath): os.mkdir(outpath)
 
-for i, testable in enumerate(testables):
-  print('-'*50)
-  print(i)
-  print('-'*50)
+  for i, fpath in enumerate(fpaths):
+    print('-'*50)
+    print(f"Reconstructing image with file path {fpath}, image {i} of {len(fpaths)}")
+    print('-'*50)
 
-  no_steps = 2000
+    no_steps = 2000
 
-  out_dir = f"mynew256to1024/again{i}/"
-  im_string = f"256lows/{i}as1024.png"
+    cur_outdir = f"{outpath}/{i}"
+    if not os.path.exists(cur_outdir): 
+      os.mkdir(cur_outdir)
 
-  if not os.path.exists(out_dir): os.mkdir(out_dir)
-  brgm = BRGMInpainter(im_string, verbose=False, im_verbose=False, out_dir = out_dir)
-  brgm.im_verbose = False
-  brgm.lossprint_interval = 250
-  brgm.learning_rate = 0.1
-  brgm.train_brgm(max_steps=no_steps)
+    brgm = BRGM(fpath, verbose=False, im_verbose=False, out_dir = cur_outdir, device=device)
+    brgm.im_verbose = False
+    brgm.lossprint_interval = 250
+    brgm.learning_rate = 0.1
+    brgm.train_brgm(max_steps=no_steps)
 
-  with open(out_dir + f'image{i}.json', 'w') as f:
-    brgmll = json.dump(brgm.loss_log, f)
+    # with open(cur_outdir + f'image{i}.json', 'w') as f:
+    #   brgmll = json.dump(brgm.loss_log, f)
 
-  with open(out_dir + f'image{i}full.json', 'w') as f:
-    brgmllf = json.dump(brgm.true_loss_log, f)
-  continue
+    # with open(cur_outdir + f'image{i}full.json', 'w') as f:
+    #   brgmllf = json.dump(brgm.true_loss_log, f)
+    # continue
+
+if __name__ == "__main__":
+  run()

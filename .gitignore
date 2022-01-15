@@ -1,4 +1,5 @@
 mynew256to1024/*
+mysub256to1024/*
 *.pkl
 __pycache__/
 training_outputs/
