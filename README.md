@@ -25,11 +25,19 @@ Our method, BRGM, builds on the StyleGAN-ADA Pytorch codebase, so our requiremen
 
 ## Usage
 
+For further options, call `python3 run.py --help`.
+
+### Super-resolution
+
 To run a superresolution experiment, run
 
 ```
-python3 run.py --device=cuda:3 --outpath=mynew256to1024 --fpaths=256lows/truelow0.png --fpath-corrupted=True --reconstruction-type=superres --input-dim=64 --model=BRGM
+python3 run.py --device=cuda:3 --outpath=mynew256to1024 --fpaths=256lows/truelow0.png --fpath-corrupted=True --reconstruction-type=superres --input-dim=64 --model=LBRGM
 ```
+
+### Inpainting 
+
+@TODO
 
 <!-- * Python libraries: `pip install click requests tqdm pyspng ninja imageio-ffmpeg==0.4.3`.  We use the Anaconda3 2020.11 distribution which installs most of these by default. -->
 <!-- * 1&ndash;8 high-end NVIDIA GPUs with at least 12 GB of memory. We have done all testing and development using NVIDIA DGX-1 with 8 Tesla V100 GPUs. -->

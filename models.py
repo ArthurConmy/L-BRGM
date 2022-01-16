@@ -12,6 +12,7 @@ import PIL.Image as Image
 import torch.nn.functional as F
 import lpips
 from skimage.metrics import structural_similarity as ssim
+from forwardModels import ForwardFillMask, ForwardFillMask
 
 class Reconstructer(torch.nn.Module, ABC):
   def __init__(self, fname, verbose = True, im_verbose = True, out_dir = "", hollow=False, trial_no = -1, indx = 0, device=None, fpath_corrupted=False, reconstruction_type='superres', input_dim=None):
@@ -61,7 +62,7 @@ class Reconstructer(torch.nn.Module, ABC):
       self.input_dim=input_dim
       self.initialise_superres(input_dim)
     if reconstruction_type == 'inpaint':
-      pass # TODO
+      self.initialise_inpaint()
     
     self.initialise_ground_truth()
     # # mem()
@@ -81,6 +82,8 @@ class Reconstructer(torch.nn.Module, ABC):
     self.w = torch.nn.Parameter(torch.tensor(self.w_avg.repeat([1, self.G.mapping.num_ws, 1]), dtype=torch.float32, device=self.device, requires_grad=True))    
 
   def initialise_cuda(self):
+    if self.device is not None:
+      return
     if torch.cuda.is_available():
       if self.verbose: print('Working on GPU, good')
       self.device = torch.device('cuda')
@@ -190,8 +193,18 @@ class Reconstructer(torch.nn.Module, ABC):
                                            input_dim / 1024, 0, self.device)
     self.get_lpips = self.get_lpips_sr
 
-  def initialise_inpaint(self, mask):
-    raise NotImplementedError # TODO
+  def initialise_inpaint(self):    
+    print(self.device, "is our device")
+    self.mask = ForwardFillMask(self.device)
+    self.mask.mask = torch.load("halfmask.pt").to(self.device)
+    self.corrupter = self.mask
+
+    # generation of other masks
+    # print(self.mask.mask[0, :, 0, 0])
+    # print(self.mask.mask[0, :, 1023, 1023])
+    # for i in range(767):
+    #   for j in range(1024): 
+    #     self.mask.mask[0, :, j, i] = self.mask.mask[0, :, 0, 0]
 
   def corrupt(self, tens, is_ground_truth=False): ## corrupt the tensor tens
     assert self.corrupter is not None, "No corruption initialised. Need reconstruction type \"superres\" or \"inpaint\""
