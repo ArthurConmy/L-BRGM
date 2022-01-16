@@ -74,6 +74,7 @@ class Reconstructer(torch.nn.Module, ABC):
     # mem()
     self.initialise_metrics()
     # mem()
+    self.cur_lpips = 1e9
     self.best_lpips = {}
 
   def old_z_init():
@@ -267,9 +268,10 @@ class Reconstructer(torch.nn.Module, ABC):
     return self.loss_fn_alex(recon, truly).item()
 
   def get_ssim(self):
-    # recon = self.get_current_reconstruction_pm1().detach().clone()
+    recon = self.get_current_reconstruction_pm1().detach().clone()
     # recon = 
     truly = self.ground_truth.detach().clone()
+    print(recon.shape, truly.shape)
     truly /= (255 / 2)
     truly -= 1.0     
 
@@ -278,8 +280,6 @@ class Reconstructer(torch.nn.Module, ABC):
   def get_down_lpips_merged(self):
     recon = self.get_current_merged_pm1_256() ## self.get_current_reconstruction_pm1().detach().clone()
     truly = self.target_pm1_down ## self.ground_truth.detach().clone(
-
-    print(recon.shape, truly.shape, "are the shapes")
     return self.loss_fn_alex(recon, truly).item()
 
   def get_down_ssim_merged(self):
@@ -348,8 +348,7 @@ class Reconstructer(torch.nn.Module, ABC):
     self.true_loss_log.append(true_loss_log_entry)
 
     if self.fname not in self.best_lpips or self.cur_lpips < self.best_lpips[self.fname] or self.step_no == self.max_steps-1:
-        self.best_lpips[self.fname] = self.cur_lpips
-            # print(self.fname, self.learning_rate, self.lambda_perc, self.lambda_pix, self.lambda_mse, self.lambda_norm)
+        if self.fname not in self.best_lpips or self.cur_lpips < self.best_lpips[self.fname]: self.best_lpips[self.fname] = self.cur_lpips
         self.show_generated()
         self.save_the_image(f"{self.step_no} {ctime()}.png")
         torch.save(self.w.detach().clone(), self.out_dir + f"{self.step_no} {ctime()}.pt")
@@ -365,7 +364,7 @@ class Reconstructer(torch.nn.Module, ABC):
 
     adam_list = [{"params": [self.w], "lr": self.w_lr}]
 
-    if "z" in self.__dict__:
+    if isinstance(self, LBRGM):
         adam_list.append({"params": [self.z], "lr": self.z_lr})
 
     opt = torch.optim.Adam(adam_list)
@@ -380,8 +379,6 @@ class Reconstructer(torch.nn.Module, ABC):
     self.step_no = 0
 
     while perf_counter() - start_time < timeout and self.step_no < max_steps:
-    #   opt_z.zero_grad()
-    #   opt_w.zero_grad()
       opt.zero_grad()
 
       loss = self.forward()
@@ -394,10 +391,7 @@ class Reconstructer(torch.nn.Module, ABC):
         print()
 
       loss.backward()
-    #   print('stepping ... ?')
       opt.step()
-    #   opt_w.step()
-
       self.step_no += 1
 
     if save_the_merged: self.save_merged(f"testing_{ perf_counter() }.png")
@@ -405,6 +399,7 @@ class Reconstructer(torch.nn.Module, ABC):
 
 class BRGM(Reconstructer):
   def __init__(self, *args, **kwargs):
+    print(isinstance(self, BRGM), isinstance(self, LBRGM))
     print(f"*args: {args}, **kwargs: {kwargs}")
     super().__init__(*args, **kwargs)    
     self.beta1 = 0.9
@@ -468,8 +463,6 @@ class BRGM(Reconstructer):
     cosine_loss = cosine_distance(self.w)
     loss += self.lambda_c * cosine_loss
 
-    self.cur_lpips = 4.0 ## self.get_lpips()
-
     true_loss_log_entry = {"total" : loss.item(),
                           "pixelwise" : self.lambda_pix * pixelwise_loss.item(),
                           "perceptual" : self.lambda_perc * perceptual_loss.item(),
@@ -480,11 +473,13 @@ class BRGM(Reconstructer):
                           "pixelwise" : pixelwise_loss.item(),
                           "perceptual" : perceptual_loss.item(),
                           "w" : w_loss.item(),
-                          "cosine" : cosine_loss.item(),
-                          "lpips" : self.cur_lpips}
+                          "cosine" : cosine_loss.item()}
+
+    if not self.fpath_corrupted: ## doesn't make sense to compute LPIPS if we don't have access to the true image
+      self.cur_lpips = self.get_lpips()
+      loss_log_entry["lpips"] = self.cur_lpips
     
-    
-    if self.step_no == self.max_steps - 1: loss_log_entry["ssim"] = self.get_ssim()    
+    if self.step_no == self.max_steps - 1 and self.fpath_corrupted is False: loss_log_entry["ssim"] = self.get_ssim()    
     return loss, true_loss_log_entry, loss_log_entry
 
   def get_losses(self): # take some vector w2 and send it through, return the losses
@@ -518,35 +513,6 @@ class BRGM(Reconstructer):
                           "cosine" : self.blambda_c * cosine_loss.item(),
                         #   "lpips" : self.cur_lpips}
     }
-
-  def train_brgm(self, timeout = 1e9, max_steps = 1e9, save_the_merged = False):
-    self.max_steps = max_steps
-    opt = torch.optim.Adam([self.w], lr=self.learning_rate)
-
-    self.loss_log = []
-    self.true_loss_log = []
-
-    start_time = perf_counter()
-    self.step_no = 0
-
-    while perf_counter() - start_time < timeout and self.step_no < max_steps:
-      opt.zero_grad()
-
-      loss = self.forward()
-
-      if self.step_no % self.lossprint_interval == self.lossprint_interval - 1:
-        print(self.step_no, 'is the step number, and losses') 
-        print_smol_numbers("RAW: " + str(self.loss_log[-1]))
-        print_smol_numbers("TRUE: " + str(self.true_loss_log[-1]))
-        print(ctime())
-        print()
-        # self.save_the_image(ctime() + ".png")
-
-      loss.backward()
-      opt.step()
-      self.step_no += 1
-
-    if save_the_merged: self.save_merged(f"testing_{ perf_counter() }.png")
     
 class LBRGM(Reconstructer):
   def __init__(self, *args, **kwargs):
@@ -671,24 +637,9 @@ class LBRGM(Reconstructer):
       self.cur_lpips = self.get_lpips()
       loss_log_entry["lpips"] = self.cur_lpips
 
-    # TODO still fixing    
-
-    self.loss_log.append(loss_log_append)
-
-    if self.fname not in self.best_lpips or self.cur_lpips < self.best_lpips[self.fname] or self.step_no == 1999:
-        self.best_lpips[self.fname] = self.cur_lpips
-        self.loss_log[-1]["ssim"] = self.get_ssim()
-        if self.trial_no > 10:
-            # print(self.fname, self.learning_rate, self.lambda_perc, self.lambda_pix, self.lambda_mse, self.lambda_norm)
-            self.show_generated()
-            self.save_the_image(f"{self.step_no} {ctime()}.png")
-            torch.save(self.w.detach().clone(), self.out_dir + f"{self.step_no} {ctime()}.pt")
-
-    if self.im_verbose and self.step_no % 10 == 0:
-      if 'downres' not in dir(self): self.show_merged()
-      else: self.show_generated()
-
-    return loss
+    if self.step_no == self.max_steps and self.fpath_corrupted is False:
+      loss_log_entry["ssim"]=self.get_ssim()
+    return loss, true_loss_log_entry, loss_log_entry
 
 #   def initialise_corrupt(self):
 #     self.mask = ForwardFillMask(self.device)

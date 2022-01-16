@@ -7,6 +7,8 @@ import click
 import warnings
 warnings.filterwarnings('ignore')
 
+MODELS = {"BRGM" : BRGM, "LBRGM" : LBRGM}
+
 def get_testable_fpaths():
   with open("testables.txt", "r") as f:
     lines = f.readlines()
@@ -21,13 +23,14 @@ def get_testable_fpaths():
 
 @click.command()
 @click.option('--device', default=None, help='Device to train on.')
+@click.option('--model', type=click.Choice(['LBRGM', 'BRGM'],), default='LBRGM')
 @click.option('--fpaths', default=get_testable_fpaths(), multiple=True, help='Paths to image file.')
 @click.option('--outpath', required=True, help='Output directory to save run progress.')
-@click.option('--no_steps', default=2000, help='Number of optimization steps.')
+@click.option('--no-steps', default=2000, help='Number of optimization steps.')
 @click.option('--reconstruction-type', type=click.Choice(['inpaint', 'superres'],), help='Corruption process: either inpainting or superresolution.')
 @click.option('--input-dim', default=64, help='Height and width of input image to have super-resolution applied')
 @click.option('--fpath-corrupted', default=True, help='Whether the input image has already had the corruption applied.')
-def run(device, fpaths, outpath, no_steps, reconstruction_type, input_dim, fpath_corrupted):
+def run(device, fpaths, outpath, no_steps, reconstruction_type, input_dim, fpath_corrupted, model):
   best_lpips = {}
   if not os.path.exists(outpath): os.mkdir(outpath)
   
@@ -40,17 +43,26 @@ def run(device, fpaths, outpath, no_steps, reconstruction_type, input_dim, fpath
     print(f"Reconstructing image with file path {fpath}, image {i+1} of {len(fpaths)}")
     print('-'*50)
 
-    no_steps = 2000
-
     cur_outdir = f"{outpath}/{i}"
     if not os.path.exists(cur_outdir): 
       os.mkdir(cur_outdir)
+    
+    model_args = {
+      "fname" : fpath, 
+      "verbose" : False, 
+      "im_verbose" : True, 
+      "out_dir" : cur_outdir, 
+      "device" : device, 
+      "fpath_corrupted" : fpath_corrupted, 
+      "reconstruction_type" : reconstruction_type, 
+      "input_dim" : input_dim,
+    }
 
-    brgm = BRGM(fpath, verbose=False, im_verbose=True, out_dir = cur_outdir, device=device, fpath_corrupted=fpath_corrupted, reconstruction_type=reconstruction_type, input_dim=input_dim)
-    brgm.im_verbose = False
-    brgm.lossprint_interval = 250
-    brgm.learning_rate = 0.1
-    brgm.train_brgm(max_steps=no_steps)
+    model = MODELS[model](**model_args)
+    model.im_verbose = False
+    model.lossprint_interval = 250
+    model.learning_rate = 0.1
+    model.train_model(max_steps=no_steps)
 
     # with open(cur_outdir + f'image{i}.json', 'w') as f:
     #   brgmll = json.dump(brgm.loss_log, f)

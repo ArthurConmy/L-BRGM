@@ -23,9 +23,18 @@ Our method, BRGM, builds on the StyleGAN-ADA Pytorch codebase, so our requiremen
 * The folder `images1024x1024` from the FFHQ dataset (currently hosted on [drive](https://drive.google.com/drive/folders/1u2xu7bSrWxrbUxk-dT-UvEJq8IjdmNTP). Note that shortcuts the folder can be used if working in colab to save lots of downloading).
 * Download the pre-trained model `ffhq.pkl` (available [here](https://dl.dropboxusercontent.com/s/jlgybz6nfhmpv54/ffhq.pkl)) and save in the main directory.
 
+## Usage
+
+To run a superresolution experiment, run
+
+```
+python3 run.py --device=cuda:3 --outpath=mynew256to1024 --fpaths=256lows/truelow0.png --fpath-corrupted=True --reconstruction-type=superres --input-dim=64 --model=BRGM
+```
+
 <!-- * Python libraries: `pip install click requests tqdm pyspng ninja imageio-ffmpeg==0.4.3`.  We use the Anaconda3 2020.11 distribution which installs most of these by default. -->
 <!-- * 1&ndash;8 high-end NVIDIA GPUs with at least 12 GB of memory. We have done all testing and development using NVIDIA DGX-1 with 8 Tesla V100 GPUs. -->
 <!-- * For running the inference from a pre-trained model, you need 1 GPU with at least 12GB of memory. We ran on NVIDIA Titan Xp. For training a new StyleGAN2-ADA generator, you need 1-8 GPUS. -->
 
 <!-- Current limitations -->
 <!-- No setting seed for reproducible results -->
+<!-- No support for DeepGIN or GFPGAN -->
