@@ -14,13 +14,15 @@ import lpips
 from skimage.metrics import structural_similarity as ssim
 
 class FFHQInpainter(torch.nn.Module, ABC):
-  def __init__(self, ground_truth, verbose = True, im_verbose = True, out_dir = "", hollow=False, trial_no = -1, indx = 0, device=None):
+  def __init__(self, fname, verbose = True, im_verbose = True, out_dir = "", hollow=False, trial_no = -1, indx = 0, device=None, fpath_corrupted=False):
     
     """Parameters:
     -mask is the mask of booleans describing (True) if pixels are blanked out, or not (False)
     -ground_truth is the file path to the 1024x1024 image to be inpainted"""
 
-    self.fname = ground_truth
+
+    self.fname = fname
+    self.fpath_corrupted = fpath_corrupted
     self.indx = indx
     
     self.out_dir = out_dir
@@ -44,8 +46,7 @@ class FFHQInpainter(torch.nn.Module, ABC):
     if self.device is None:
       self.initialise_cuda()
     self.initialise_generator()
-    self.initialise_vgg_from_scratch() # TODO fix
-    # # mem()
+    self.initialise_vgg_from_scratch()
 
     self.initialise_wavg() # needed to set the parameter below
     # # mem()
@@ -59,7 +60,7 @@ class FFHQInpainter(torch.nn.Module, ABC):
     self.initialise_corrupt()
     # # mem()
     
-    self.initialise_ground_truth(ground_truth)
+    self.initialise_ground_truth()
     # # mem()
     # self.test_initial_w()
     # # mem()
@@ -89,7 +90,7 @@ class FFHQInpainter(torch.nn.Module, ABC):
     self.z_lr = 0.01
     self.w_lr = 0.01
   def initialise_generator(self):
-    network_pkl = "ffhq.pkl" # take this from the BRGM repo/notebook
+    network_pkl = "ffhq.pkl" 
     if self.verbose: print('Loading networks from "%s"...' % network_pkl)
     time_now = perf_counter()
     with dnnlib.util.open_url(network_pkl) as fp:
@@ -126,16 +127,26 @@ class FFHQInpainter(torch.nn.Module, ABC):
       w_avg = torch.tensor(w_avg, dtype=torch.float32, device=self.device)  # [1, 1, C]
       torch.save(w_avg, "thewavg.pt")
       torch.save(w_std_scalar, "wstdscalar.pt")
-  def initialise_ground_truth(self, ground_truth):
-    self.ground_truth = trans_to_tensor(Image.open(ground_truth)).to(self.device).reshape(1, 3, 1024, 1024) # seems to be in range [0, 1]
+  def initialise_ground_truth(self):
+    tens = trans_to_tensor(Image.open(self.fname)).to(self.device)
+    # entries = tens.flatten().shape[0]
+    # assert entries % 3 == 0, "Are you sure the image has three colour channels?"
+    self.ground_truth = tens.unsqueeze(0)
+
+    # self.ground_truth = .reshape(1, 3, 1024, 1024) # seems to be in range [0, 1]
     self.ground_truth *= 255
 
-    self.ground_truth_pm1 = (self.ground_truth / (255 / 2)) - 1.0
-    self.ground_truth_pm1_256 = F.interpolate(self.ground_truth_pm1, scale_factor=0.25)
+    # self.ground_truth_pm1 = (self.ground_truth / (255 / 2)) - 1.0
+    # self.ground_truth_pm1_256 = F.interpolate(self.ground_truth_pm1, scale_factor=0.25)
 
-    self.target = self.corrupt(self.ground_truth)
+    if self.fpath_corrupted:
+      self.target = self.ground_truth
+    else:
+      self.target = self.corrupt(self.ground_truth)
+    
     self.target = self.target.to(self.device).to(torch.float32)
     self.target_features = getVggFeatures(self.target, self.G.img_channels, self.vgg16)  
+
   def initialise_corrupt(self): ## initialise the corruption
     pass
   def initialise_convenience(self, lossprint_interval):
@@ -148,17 +159,11 @@ class FFHQInpainter(torch.nn.Module, ABC):
 
     if self.im_verbose:
       print("This should be the StyleGAN average face!")
-      show_from_raw_g_synthesis(synth_images)
-      # print("Shown.")
+      save_from_raw_g_synthesis(synth_images, f"{self.out_dir}/Avg at {ctime()}.png")
 
-      print("This should be the corrupted face!")
-      save_image_show(self.corrupt(self.ground_truth)[0, :, :, :])
+    print("Saving the corrupted face.")
+    save_image(self.corrupt(self.ground_truth)[0, :, :, :], f"{self.out_dir}/Corrupted at {ctime()}.png")
       
-      # corrupted_im = self.target.detach().clone() / (255 / 2)
-      # corrupted_im -= 1.0
-      # plt.imshow(trans_to_pil(self.target[0]))
-      # plt.show()
-      print("Shown.")
   def test_ground_truth(self):
     if self.im_verbose:
       print("This should be the ground truth:")
@@ -239,7 +244,8 @@ class FFHQInpainter(torch.nn.Module, ABC):
     return self.loss_fn_alex(recon, truly).item()
 
   def get_ssim(self):
-    recon = self.get_current_reconstruction_pm1().detach().clone()
+    # recon = self.get_current_reconstruction_pm1().detach().clone()
+    # recon = 
     truly = self.ground_truth.detach().clone()
     truly /= (255 / 2)
     truly -= 1.0     
@@ -458,12 +464,12 @@ class BRGM(FFHQInpainter):
     self.downres, _ = constructForwardModel("super-resolution", self.G.img_resolution, self.G.img_channels, None, self.fname, ## I guess ...
                                           1 / 16, 0, self.device)
     
-    # self.mask = ForwardFillMask(self.device)
-    # self.mask.mask = torch.load("halfmask.pt", map_location=self.device)
-
 
   def corrupt(self, tens):
-    return self.downres(tens)
+    print("Shape 1:", tens.shape)
+    ret = self.downres(tens)
+    print("Shape 2:", ret.shape)
+    return ret
     # return self.mask(tens)
 
   # old things 

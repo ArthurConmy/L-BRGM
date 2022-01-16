@@ -22,17 +22,18 @@ def get_testable_fpaths():
 @click.command()
 @click.option('--device', default=None, help='Device to train on.')
 @click.option('--fpaths', default=get_testable_fpaths(), multiple=True, help='Paths to image file.')
-@click.option('--outpath', help='Output directory to save run progress.')
+@click.option('--outpath', required=True, help='Output directory to save run progress.')
 @click.option('--no_steps', default=2000, help='Number of optimization steps.')
-def run(device, fpaths, outpath, no_steps):
-  print(f"Availability of GPU: {torch.cuda.is_available()}")
+@click.option('--reconstruction-type', type=click.Choice(['inpaint', 'superres'],), help='Corruption process: either inpainting or superresolution.')
+@click.option('--fpath-corrupted', default=True, help='Whether the input image has already had the corruption applied.')
+def run(device, fpaths, outpath, no_steps, reconstruction_type, fpath_corrupted):
   best_lpips = {}
 
   if not os.path.exists(outpath): os.mkdir(outpath)
 
   for i, fpath in enumerate(fpaths):
     print('-'*50)
-    print(f"Reconstructing image with file path {fpath}, image {i} of {len(fpaths)}")
+    print(f"Reconstructing image with file path {fpath}, image {i+1} of {len(fpaths)}")
     print('-'*50)
 
     no_steps = 2000
@@ -41,7 +42,7 @@ def run(device, fpaths, outpath, no_steps):
     if not os.path.exists(cur_outdir): 
       os.mkdir(cur_outdir)
 
-    brgm = BRGM(fpath, verbose=False, im_verbose=False, out_dir = cur_outdir, device=device)
+    brgm = BRGM(fpath, verbose=False, im_verbose=True, out_dir = cur_outdir, device=device, fpath_corrupted=fpath_corrupted)
     brgm.im_verbose = False
     brgm.lossprint_interval = 250
     brgm.learning_rate = 0.1

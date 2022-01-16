@@ -1,6 +1,7 @@
 import torch
 import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
+import PIL
 
 trans_to_pil = transforms.ToPILImage()
 trans_to_tensor = transforms.ToTensor()
