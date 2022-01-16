@@ -332,6 +332,30 @@ class Reconstructer(torch.nn.Module, ABC):
 
       return ssim(npify(otherer), npify(truly), data_range = 2, multichannel=True)
 
+  @abstractmethod
+  def model_losses(self, synth_image_down):
+    pass
+
+  def forward(self):
+    synth_images = self.G.synthesis(self.w, noise_mode='const')  # G(w)
+    if self.im_verbose: self.show_generated()
+    ## show_from_raw_g_synthesis(synth_images, False)
+    synth_images = (synth_images + 1) * (255 / 2)
+    synth_images_down = self.corrupt(synth_images)
+
+    loss, true_loss_log_entry, log_loss_entry = self.model_losses(synth_images_down)
+    self.loss_log.append(log_loss_entry)
+    self.true_loss_log.append(true_loss_log_entry)
+
+    if self.fname not in self.best_lpips or self.cur_lpips < self.best_lpips[self.fname] or self.step_no == self.max_steps-1:
+        self.best_lpips[self.fname] = self.cur_lpips
+            # print(self.fname, self.learning_rate, self.lambda_perc, self.lambda_pix, self.lambda_mse, self.lambda_norm)
+        self.show_generated()
+        self.save_the_image(f"{self.step_no} {ctime()}.png")
+        torch.save(self.w.detach().clone(), self.out_dir + f"{self.step_no} {ctime()}.pt")
+
+    return loss
+
   def train_model(self, timeout = 1e9, max_steps = 1e9, save_the_merged = False):
     self.max_steps=max_steps
     # if len(self.zparams) == 0:
@@ -424,17 +448,7 @@ class BRGM(Reconstructer):
       self.w = torch.nn.Parameter(self.G.mapping(self.z, None).to(self.device))
 
 
-  def forward(self):
-    synth_images = self.G.synthesis(self.w, noise_mode='const')  # G(w)
-    if self.im_verbose: self.show_generated()
-    ## show_from_raw_g_synthesis(synth_images, False)
-    synth_images = (synth_images + 1) * (255 / 2)
-    synth_images_down = self.corrupt(synth_images)
-    
-    # print(synth_images_down)
-    # print(self.target)
-
-    # adding L2 loss in pixel space
+  def model_losses(self, synth_images_down):
     pixelwise_loss = (synth_images_down - self.target).square().mean()
 
     loss = 0.0
@@ -456,42 +470,22 @@ class BRGM(Reconstructer):
 
     self.cur_lpips = 4.0 ## self.get_lpips()
 
-    self.true_loss_log.append({"total" : loss.item(),
+    true_loss_log_entry = {"total" : loss.item(),
                           "pixelwise" : self.lambda_pix * pixelwise_loss.item(),
                           "perceptual" : self.lambda_perc * perceptual_loss.item(),
                           "w" : self.lambda_w * w_loss.item(),
-                          "cosine" : self.lambda_c * cosine_loss.item()})
+                          "cosine" : self.lambda_c * cosine_loss.item()}
 
-    self.loss_log.append({"total" : loss.item(),
+    loss_log_entry = {"total" : loss.item(),
                           "pixelwise" : pixelwise_loss.item(),
                           "perceptual" : perceptual_loss.item(),
                           "w" : w_loss.item(),
                           "cosine" : cosine_loss.item(),
-                          "lpips" : self.cur_lpips})
+                          "lpips" : self.cur_lpips}
     
     
-    if self.step_no == self.max_steps - 1: self.loss_log[-1]["ssim"] = self.get_ssim()
-    
-    if self.fname not in self.best_lpips or self.cur_lpips < self.best_lpips[self.fname] or self.step_no == self.max_steps-1:
-        self.best_lpips[self.fname] = self.cur_lpips
-            # print(self.fname, self.learning_rate, self.lambda_perc, self.lambda_pix, self.lambda_mse, self.lambda_norm)
-        self.show_generated()
-        self.save_the_image(f"{self.step_no} {ctime()}.png")
-        torch.save(self.w.detach().clone(), self.out_dir + f"{self.step_no} {ctime()}.pt")
-
-    return loss
-
-  # def initialise_corrupt(self):
-    # self.downres, _ = constructForwardModel("super-resolution", self.G.img_resolution, self.G.img_channels, None, self.fname, ## I guess ...
-                                          # 1 / 16, 0, self.device)
-    
-  # old things 
-    # self.mask = ForwardFillMask(self.device)
-    # self.mask.mask = torch.load("halfmask.pt", map_location=self.device)
-
-  # def corrupt(self, tens):
-  #   return self.mask(tens)
-  #   # return tens
+    if self.step_no == self.max_steps - 1: loss_log_entry["ssim"] = self.get_ssim()    
+    return loss, true_loss_log_entry, loss_log_entry
 
   def get_losses(self): # take some vector w2 and send it through, return the losses
 
@@ -631,14 +625,8 @@ class LBRGM(Reconstructer):
                         #   "lpips" : self.cur_lpips}
     }
     
-  def forward(self):
+  def model_losses(self, synth_images_down):
 
-    synth_images = self.G.synthesis(self.w, noise_mode='const')  # G(w)
-
-    synth_images = (synth_images + 1) * (255 / 2)
-    synth_images_down = self.corrupt(synth_images)
-
-    # adding L2 loss in pixel space
     pixelwise_loss = (synth_images_down - self.target).square().mean()
 
     loss = 0.0
@@ -667,13 +655,13 @@ class LBRGM(Reconstructer):
         show_from_raw_g_synthesis(self.G.synthesis(self.w.detach().clone(), noise_mode = 'const'))
         print('Shown')
 
-    self.true_loss_log.append({"total" : loss.item(),
+    true_loss_log_entry = {"total" : loss.item(),
                           "pixelwise" : self.lambda_pix * pixelwise_loss.item(),
                           "perceptual" : self.lambda_perc * perceptual_loss.item(),
                           "mse" : self.lambda_mse * mse_loss.item(),
-                          "norm" : self.lambda_norm * norm_loss.item()})
+                          "norm" : self.lambda_norm * norm_loss.item()}
 
-    loss_log_append = {"total" : loss.item(),
+    loss_log_entry = {"total" : loss.item(),
       "pixelwise" : pixelwise_loss.item(),
       "perceptual" : perceptual_loss.item(),
       "mse" : mse_loss.item(),
@@ -681,7 +669,9 @@ class LBRGM(Reconstructer):
 
     if not self.fpath_corrupted: ## doesn't make sense to compute LPIPS if we don't have access to the true image
       self.cur_lpips = self.get_lpips()
-      loss_log_append["lpips" : self.cur_lpips]
+      loss_log_entry["lpips"] = self.cur_lpips
+
+    # TODO still fixing    
 
     self.loss_log.append(loss_log_append)
 
