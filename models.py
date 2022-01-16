@@ -13,18 +13,18 @@ import torch.nn.functional as F
 import lpips
 from skimage.metrics import structural_similarity as ssim
 
-class FFHQInpainter(torch.nn.Module, ABC):
-  def __init__(self, fname, verbose = True, im_verbose = True, out_dir = "", hollow=False, trial_no = -1, indx = 0, device=None, fpath_corrupted=False):
+class Reconstructer(torch.nn.Module, ABC):
+  def __init__(self, fname, verbose = True, im_verbose = True, out_dir = "", hollow=False, trial_no = -1, indx = 0, device=None, fpath_corrupted=False, reconstruction_type='superres', input_dim=None):
     
     """Parameters:
     -mask is the mask of booleans describing (True) if pixels are blanked out, or not (False)
     -ground_truth is the file path to the 1024x1024 image to be inpainted"""
 
-
     self.fname = fname
     self.fpath_corrupted = fpath_corrupted
     self.indx = indx
-    
+    self.corrupter = None
+
     self.out_dir = out_dir
     if len(self.out_dir) != 0 and self.out_dir[-1] != "/": self.out_dir += "/"
     self.min_lpips = 100.0
@@ -56,9 +56,11 @@ class FFHQInpainter(torch.nn.Module, ABC):
         self.old_z_init()
         self.test_initial_w()
 
-    # # mem()
-    self.initialise_corrupt()
-    # # mem()
+    print(reconstruction_type)
+    if reconstruction_type == 'superres':
+      self.initialise_superres(input_dim)
+    if reconstruction_type == 'inpaint':
+      pass # TODO
     
     self.initialise_ground_truth()
     # # mem()
@@ -174,8 +176,19 @@ class FFHQInpainter(torch.nn.Module, ABC):
       save_image_show(self.corrupt(self.ground_truth)[0, :, :, :])
       print("Shown.")
 
+  def initialise_superres(self, input_dim):
+    # self.downres, _ = constructForwardModel("super-resolution", self.G.img_resolution, self.G.img_channels, None, self.fname, ## I guess ...
+                                        #   1 / 4, 0, self.device)
+    
+    self.corrupter, _ = constructForwardModel("super-resolution", self.G.img_resolution, self.G.img_channels, None, self.fname,
+                                           input_dim / 1024, 0, self.device)
+
+  def initialise_inpaint(self, mask):
+    raise NotImplementedError # TODO
+
   def corrupt(self, tens): ## corrupt the tensor tens
-    return tens
+    assert self.corrupter is not None, "No corruption initialised. Need reconstruction type \"superres\" or \"inpaint\""
+    return self.corrupter(tens)
 
   @abstractmethod
   def forward(self):
@@ -272,9 +285,6 @@ class FFHQInpainter(torch.nn.Module, ABC):
   def get_ssim_sr(self):
       recon = self.get_current_reconstruction_pm1_256()
       truly = self.ground_truth_pm1_256
-    
-      
-
       return get_pm1_ssim(recon, truly)
 
   def get_comp_lpips(self):
@@ -358,7 +368,7 @@ class FFHQInpainter(torch.nn.Module, ABC):
     if save_the_merged: self.save_merged(f"testing_{ perf_counter() }.png")
     
 
-class BRGM(FFHQInpainter):
+class BRGM(Reconstructer):
   def __init__(self, *args, **kwargs):
     print(f"*args: {args}, **kwargs: {kwargs}")
     super().__init__(*args, **kwargs)    
@@ -460,18 +470,10 @@ class BRGM(FFHQInpainter):
 
     return loss
 
-  def initialise_corrupt(self):
-    self.downres, _ = constructForwardModel("super-resolution", self.G.img_resolution, self.G.img_channels, None, self.fname, ## I guess ...
-                                          1 / 16, 0, self.device)
+  # def initialise_corrupt(self):
+    # self.downres, _ = constructForwardModel("super-resolution", self.G.img_resolution, self.G.img_channels, None, self.fname, ## I guess ...
+                                          # 1 / 16, 0, self.device)
     
-
-  def corrupt(self, tens):
-    print("Shape 1:", tens.shape)
-    ret = self.downres(tens)
-    print("Shape 2:", ret.shape)
-    return ret
-    # return self.mask(tens)
-
   # old things 
     # self.mask = ForwardFillMask(self.device)
     # self.mask.mask = torch.load("halfmask.pt", map_location=self.device)
@@ -541,7 +543,7 @@ class BRGM(FFHQInpainter):
 
     if save_the_merged: self.save_merged(f"testing_{ perf_counter() }.png")
     
-class LBRGM(FFHQInpainter):
+class LBRGM(Reconstructer):
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
 
@@ -702,13 +704,6 @@ class LBRGM(FFHQInpainter):
 #     # return self.downres(tens)
 #     return self.mask(tens)
 
-  def initialise_corrupt(self):
-    # self.downres, _ = constructForwardModel("super-resolution", self.G.img_resolution, self.G.img_channels, None, self.fname, ## I guess ...
-                                        #   1 / 4, 0, self.device)
-    
-    self.downres, _ = constructForwardModel("super-resolution", self.G.img_resolution, self.G.img_channels, None, self.fname, ## I guess ...
-                                          1 / 16, 0, self.device)
-
     # self.mask = ForwardFillMask(self.device)
     # self.mask.mask = torch.load("halfmask.pt", map_location=self.device) # or halfmask.pt
     
@@ -719,7 +714,3 @@ class LBRGM(FFHQInpainter):
     # self.mask.mask = smol_mask.to(self.device)
     # print(smol_mask[0][0][0][0])
     # # print(smol_mask.shape)
-
-  def corrupt(self, tens):
-    # return self.downres(tens)
-    return self.mask(tens)

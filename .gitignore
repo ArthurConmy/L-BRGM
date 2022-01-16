@@ -3,3 +3,4 @@ mysub256to1024/*
 *.pkl
 __pycache__/
 training_outputs/
+testinghackythings.py

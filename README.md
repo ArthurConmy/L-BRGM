@@ -11,6 +11,8 @@
 
 This repository is an implementation of the *L-BRGM* model introduced in [our paper](https://arxiv.org/abs/2110.03814). It builds off the implementation of BRGM [here](https://github.com/razvanmarinescu/brgm-pytorch), which in turn is built on top of the StyleGAN2-ADA implementation in PyTorch [here](https://github.com/NVlabs/stylegan2-ada-pytorch).
 
+Currently, the code supports super-resolution and inpainting of faces formatted to the FFHQ dataset standard.
+
 Feel free to get in contact with the primary author with any issues.
 
 ## Requirements
@@ -24,3 +26,6 @@ Our method, BRGM, builds on the StyleGAN-ADA Pytorch codebase, so our requiremen
 <!-- * Python libraries: `pip install click requests tqdm pyspng ninja imageio-ffmpeg==0.4.3`.  We use the Anaconda3 2020.11 distribution which installs most of these by default. -->
 <!-- * 1&ndash;8 high-end NVIDIA GPUs with at least 12 GB of memory. We have done all testing and development using NVIDIA DGX-1 with 8 Tesla V100 GPUs. -->
 <!-- * For running the inference from a pre-trained model, you need 1 GPU with at least 12GB of memory. We ran on NVIDIA Titan Xp. For training a new StyleGAN2-ADA generator, you need 1-8 GPUS. -->
+
+<!-- Current limitations -->
+<!-- No setting seed for reproducible results -->

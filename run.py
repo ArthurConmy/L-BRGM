@@ -25,11 +25,15 @@ def get_testable_fpaths():
 @click.option('--outpath', required=True, help='Output directory to save run progress.')
 @click.option('--no_steps', default=2000, help='Number of optimization steps.')
 @click.option('--reconstruction-type', type=click.Choice(['inpaint', 'superres'],), help='Corruption process: either inpainting or superresolution.')
+@click.option('--input-dim', default=64, help='Height and width of input image to have super-resolution applied')
 @click.option('--fpath-corrupted', default=True, help='Whether the input image has already had the corruption applied.')
-def run(device, fpaths, outpath, no_steps, reconstruction_type, fpath_corrupted):
+def run(device, fpaths, outpath, no_steps, reconstruction_type, input_dim, fpath_corrupted):
   best_lpips = {}
-
   if not os.path.exists(outpath): os.mkdir(outpath)
+  
+  if reconstruction_type == 'superres':
+    assert 1024 % input_dim == 0, "Input dimension need be a divisor of 1024, the height/width of images we can generate"
+    assert input_dim is not None, "Specify an input dimension"
 
   for i, fpath in enumerate(fpaths):
     print('-'*50)
@@ -42,7 +46,7 @@ def run(device, fpaths, outpath, no_steps, reconstruction_type, fpath_corrupted)
     if not os.path.exists(cur_outdir): 
       os.mkdir(cur_outdir)
 
-    brgm = BRGM(fpath, verbose=False, im_verbose=True, out_dir = cur_outdir, device=device, fpath_corrupted=fpath_corrupted)
+    brgm = BRGM(fpath, verbose=False, im_verbose=True, out_dir = cur_outdir, device=device, fpath_corrupted=fpath_corrupted, reconstruction_type=reconstruction_type, input_dim=input_dim)
     brgm.im_verbose = False
     brgm.lossprint_interval = 250
     brgm.learning_rate = 0.1
