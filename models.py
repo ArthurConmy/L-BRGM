@@ -58,6 +58,7 @@ class Reconstructer(torch.nn.Module, ABC):
 
     print(reconstruction_type)
     if reconstruction_type == 'superres':
+      self.input_dim=input_dim
       self.initialise_superres(input_dim)
     if reconstruction_type == 'inpaint':
       pass # TODO
@@ -138,14 +139,17 @@ class Reconstructer(torch.nn.Module, ABC):
     # self.ground_truth = .reshape(1, 3, 1024, 1024) # seems to be in range [0, 1]
     self.ground_truth *= 255
 
-    # self.ground_truth_pm1 = (self.ground_truth / (255 / 2)) - 1.0
-    # self.ground_truth_pm1_256 = F.interpolate(self.ground_truth_pm1, scale_factor=0.25)
-
     if self.fpath_corrupted:
       self.target = self.ground_truth
     else:
       self.target = self.corrupt(self.ground_truth)
-    
+
+    self.target_pm1 = (self.ground_truth / (255 / 2)) - 1.0
+    if self.fpath_corrupted:
+      self.target_pm1_down = self.target_pm1  
+    else:
+      self.target_pm1_down = F.interpolate(self.target_pm1, scale_factor=self.input_dim / 1024)
+
     self.target = self.target.to(self.device).to(torch.float32)
     self.target_features = getVggFeatures(self.target, self.G.img_channels, self.vgg16)  
 
@@ -164,7 +168,10 @@ class Reconstructer(torch.nn.Module, ABC):
       save_from_raw_g_synthesis(synth_images, f"{self.out_dir}/Avg at {ctime()}.png")
 
     print("Saving the corrupted face.")
-    save_image(self.corrupt(self.ground_truth)[0, :, :, :], f"{self.out_dir}/Corrupted at {ctime()}.png")
+    if self.fpath_corrupted:
+      save_image((self.ground_truth)[0, :, :, :], f"{self.out_dir}/Corrupted at {ctime()}.png")
+    else:
+      save_image(self.corrupt(self.ground_truth)[0, :, :, :], f"{self.out_dir}/Corrupted at {ctime()}.png")
       
   def test_ground_truth(self):
     if self.im_verbose:
@@ -177,18 +184,21 @@ class Reconstructer(torch.nn.Module, ABC):
       print("Shown.")
 
   def initialise_superres(self, input_dim):
-    # self.downres, _ = constructForwardModel("super-resolution", self.G.img_resolution, self.G.img_channels, None, self.fname, ## I guess ...
-                                        #   1 / 4, 0, self.device)
-    
+    print(input_dim / 1024)
     self.corrupter, _ = constructForwardModel("super-resolution", self.G.img_resolution, self.G.img_channels, None, self.fname,
                                            input_dim / 1024, 0, self.device)
+    self.get_lpips = self.get_lpips_sr
 
   def initialise_inpaint(self, mask):
     raise NotImplementedError # TODO
 
-  def corrupt(self, tens): ## corrupt the tensor tens
+  def corrupt(self, tens, is_ground_truth=False): ## corrupt the tensor tens
     assert self.corrupter is not None, "No corruption initialised. Need reconstruction type \"superres\" or \"inpaint\""
-    return self.corrupter(tens)
+    if is_ground_truth and self.fpath_corrupted:
+      # this already has had corruption
+      return tens
+    else:
+      return self.corrupter(tens)
 
   @abstractmethod
   def forward(self):
@@ -267,29 +277,30 @@ class Reconstructer(torch.nn.Module, ABC):
 
   def get_down_lpips_merged(self):
     recon = self.get_current_merged_pm1_256() ## self.get_current_reconstruction_pm1().detach().clone()
-    truly = self.ground_truth_pm1_256 ## self.ground_truth.detach().clone(
+    truly = self.target_pm1_down ## self.ground_truth.detach().clone(
 
     print(recon.shape, truly.shape, "are the shapes")
     return self.loss_fn_alex(recon, truly).item()
 
   def get_down_ssim_merged(self):
       recon = self.get_current_merged_pm1_256()
-      truly = self.ground_truth_pm1_256
+      truly = self.target_pm1_down
       return get_pm1_ssim(recon, truly)
 
   def get_lpips_sr(self):
       recon = self.get_current_reconstruction_pm1_256()
-      truly = self.ground_truth_pm1_256
-      return loss_fn_alex(recon, truly).item()
+      truly = self.target_pm1_down
+      print(recon.shape, truly.shape)
+      return self.loss_fn_alex(recon, truly).item()
 
   def get_ssim_sr(self):
       recon = self.get_current_reconstruction_pm1_256()
-      truly = self.ground_truth_pm1_256
+      truly = self.target_pm1_down
       return get_pm1_ssim(recon, truly)
 
   def get_comp_lpips(self):
     recon = self.corrupt(self.get_current_reconstruction_pm1().detach().clone())
-    truly = self.corrupt(self.ground_truth.detach().clone())
+    truly = self.corrupt(self.ground_truth.detach().clone(), is_ground_truth=True)
     truly /= (255 / 2)
     truly -= 1.0
 
@@ -443,7 +454,7 @@ class BRGM(Reconstructer):
     cosine_loss = cosine_distance(self.w)
     loss += self.lambda_c * cosine_loss
 
-    self.cur_lpips = self.get_lpips()
+    self.cur_lpips = 4.0 ## self.get_lpips()
 
     self.true_loss_log.append({"total" : loss.item(),
                           "pixelwise" : self.lambda_pix * pixelwise_loss.item(),
@@ -661,16 +672,18 @@ class LBRGM(Reconstructer):
                           "perceptual" : self.lambda_perc * perceptual_loss.item(),
                           "mse" : self.lambda_mse * mse_loss.item(),
                           "norm" : self.lambda_norm * norm_loss.item()})
-    
-    self.cur_lpips = self.get_lpips()
 
-    self.loss_log.append({"total" : loss.item(),
-                      "pixelwise" : pixelwise_loss.item(),
-                      "perceptual" : perceptual_loss.item(),
-                      "mse" : mse_loss.item(),
-                      "norm" : norm_loss.item(),
-                      "lpips" : self.cur_lpips})
-                    #    "ssim" : self.get_ssim()})
+    loss_log_append = {"total" : loss.item(),
+      "pixelwise" : pixelwise_loss.item(),
+      "perceptual" : perceptual_loss.item(),
+      "mse" : mse_loss.item(),
+      "norm" : norm_loss.item()}
+
+    if not self.fpath_corrupted: ## doesn't make sense to compute LPIPS if we don't have access to the true image
+      self.cur_lpips = self.get_lpips()
+      loss_log_append["lpips" : self.cur_lpips]
+
+    self.loss_log.append(loss_log_append)
 
     if self.fname not in self.best_lpips or self.cur_lpips < self.best_lpips[self.fname] or self.step_no == 1999:
         self.best_lpips[self.fname] = self.cur_lpips
