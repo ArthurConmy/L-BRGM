@@ -57,7 +57,7 @@ class Reconstructer(torch.nn.Module, ABC):
         self.old_z_init()
         self.test_initial_w()
 
-    print(reconstruction_type)
+    self.reconstruction_type = reconstruction_type
     if reconstruction_type == 'superres':
       self.input_dim=input_dim
       self.initialise_superres(input_dim)
@@ -152,7 +152,7 @@ class Reconstructer(torch.nn.Module, ABC):
     if self.fpath_corrupted:
       self.target_pm1_down = self.target_pm1  
     else:
-      self.target_pm1_down = F.interpolate(self.target_pm1, scale_factor=self.input_dim / 1024)
+      if self.reconstruction_type == "inpaint": self.target_pm1_down = F.interpolate(self.target_pm1, scale_factor=self.input_dim / 1024)
 
     self.target = self.target.to(self.device).to(torch.float32)
     self.target_features = getVggFeatures(self.target, self.G.img_channels, self.vgg16)  

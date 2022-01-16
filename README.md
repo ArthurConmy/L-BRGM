@@ -32,7 +32,7 @@ For further options, call `python3 run.py --help`.
 To run a superresolution experiment, run
 
 ```
-python3 run.py --device=cuda:3 --outpath=mynew256to1024 --fpaths=256lows/truelow0.png --fpath-corrupted=True --reconstruction-type=superres --input-dim=64 --model=LBRGM
+python3 run.py --device=cuda:3 --outpath=mynew256to1024 --fpaths=faces/superres/truelow0.png --fpath-corrupted=True --reconstruction-type=superres --input-dim=64 --model=LBRGM
 ```
 
 ### Inpainting 

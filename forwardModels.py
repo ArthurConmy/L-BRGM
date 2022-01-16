@@ -69,7 +69,6 @@ class ForwardFillMask(ForwardAbstract):
 
     self.mask = np.abs(grayImg - bins[maxIndex]) < (3.0/nrBins)
     self.mask = torch.tensor(scipy.ndimage.morphology.binary_opening(self.mask, iterations=3), dtype=torch.bool, device=self.device)
-    print(self.device, self.mask.device)
     #print('type(self.mask)', type(self.mask))
     self.mask = torch.repeat(torch.reshape(self.mask, (1, 1, *self.mask.shape)), img.shape[1], axis=1)
     #print('type(self.mask)', type(self.mask))
@@ -80,8 +79,7 @@ class ForwardFillMask(ForwardAbstract):
     #print('type(self.mask)', type(self.mask))
 
     whiteFill = torch.ones(x.shape, device=self.device, dtype=x.dtype)
-    print("Device here", self.device)
-    print(self.mask.device, whiteFill.device, x.device)
+    # print(self.mask.shape, whiteFill.shape, x.shape)
     xFill = torch.where(self.mask, whiteFill, x) # if true, then whiteFill, else x
 
     return xFill
