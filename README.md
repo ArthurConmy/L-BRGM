@@ -47,4 +47,6 @@ python3 run.py --device=cuda --outpath=my_outpath --fpaths=faces/inpaint/ffhq-16
 
 <!-- Current limitations -->
 <!-- No setting seed for reproducible results -->
-<!-- No support for DeepGIN or GFPGAN -->`
+<!-- No support for DeepGIN or GFPGAN -->
+<!-- No colab notebook -->
+<!-- No advice for run-it-yourself -->
