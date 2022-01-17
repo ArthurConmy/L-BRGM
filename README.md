@@ -45,4 +45,4 @@ python3 run.py --device=cuda:3 --outpath=mynew256to1024 --fpaths=faces/superres/
 
 <!-- Current limitations -->
 <!-- No setting seed for reproducible results -->
-<!-- No support for DeepGIN or GFPGAN -->
+<!-- No support for DeepGIN or GFPGAN -->`

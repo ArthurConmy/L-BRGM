@@ -15,11 +15,13 @@ from skimage.metrics import structural_similarity as ssim
 from forwardModels import ForwardFillMask, ForwardFillMask
 
 class Reconstructer(torch.nn.Module, ABC):
-  def __init__(self, fname, verbose = True, im_verbose = True, out_dir = "", hollow=False, trial_no = -1, indx = 0, device=None, fpath_corrupted=False, reconstruction_type='superres', input_dim=None):
+  def __init__(self, fname, verbose = True, im_verbose = True, out_dir = "", hollow=False, trial_no = -1, indx = 0, device=None, fpath_corrupted=False, reconstruction_type='superres', input_dim=None, lossprint_interval=1):
     
-    """Parameters:
+    """
+    Parameters:
     -mask is the mask of booleans describing (True) if pixels are blanked out, or not (False)
-    -ground_truth is the file path to the 1024x1024 image to be inpainted"""
+    -ground_truth is the file path to the 1024x1024 image to be inpainted
+    """
 
     self.fname = fname
     self.fpath_corrupted = fpath_corrupted
@@ -39,23 +41,15 @@ class Reconstructer(torch.nn.Module, ABC):
 
     super().__init__()
     self.initialise_logging(verbose, im_verbose)
-    # # mem()
     self.initialise_hyperparams()
-    # # mem()
 
     self.device = device
     if self.device is None:
       self.initialise_cuda()
+
     self.initialise_generator()
     self.initialise_vgg_from_scratch()
-
-    self.initialise_wavg() # needed to set the parameter below
-    # # mem()
-    # self.w = torch.nn.Parameter(torch.tensor(self.w_avg.repeat([1, self.G.mapping.num_ws, 1]), dtype=torch.float32, device=self.device, requires_grad=True))    
-
-    if False:
-        self.old_z_init()
-        self.test_initial_w()
+    self.initialise_wavg()
 
     self.reconstruction_type = reconstruction_type
     if reconstruction_type == 'superres':
@@ -65,16 +59,10 @@ class Reconstructer(torch.nn.Module, ABC):
       self.initialise_inpaint()
     
     self.initialise_ground_truth()
-    # # mem()
-    # self.test_initial_w()
-    # # mem()
     self.test_ground_truth()
-    # # mem()
 
-    self.initialise_convenience(1)
-    # mem()
+    self.lossprint_interval = lossprint_interval
     self.initialise_metrics()
-    # mem()
     self.cur_lpips = 1e9
     self.best_lpips = {}
 
@@ -151,16 +139,17 @@ class Reconstructer(torch.nn.Module, ABC):
     self.target_pm1 = (self.ground_truth / (255 / 2)) - 1.0
     if self.fpath_corrupted:
       self.target_pm1_down = self.target_pm1  
+
     else:
-      if self.reconstruction_type == "inpaint": self.target_pm1_down = F.interpolate(self.target_pm1, scale_factor=self.input_dim / 1024)
+      if self.reconstruction_type == "inpaint":
+        self.target_pm1_down = self.corrupter(self.target_pm1)
+
+      if self.reconstruction_type == "superres": 
+        self.target_pm1_down = F.interpolate(self.target_pm1, scale_factor=self.input_dim / 1024)
 
     self.target = self.target.to(self.device).to(torch.float32)
     self.target_features = getVggFeatures(self.target, self.G.img_channels, self.vgg16)  
 
-  def initialise_corrupt(self): ## initialise the corruption
-    pass
-  def initialise_convenience(self, lossprint_interval):
-    self.lossprint_interval = lossprint_interval
   def initialise_metrics(self):
     self.loss_fn_alex = lpips.LPIPS(net='alex').to(self.device) # best forward scores
 
@@ -180,11 +169,11 @@ class Reconstructer(torch.nn.Module, ABC):
   def test_ground_truth(self):
     if self.im_verbose:
       print("This should be the ground truth:")
-      save_image_show(self.ground_truth[0, :, :, :])
+      save_image(self.ground_truth[0, :, :, :], f"Init ground truth{ctime()}.png")
       print("Shown.")
 
       print("This should be the corrupted face!")
-      save_image_show(self.corrupt(self.ground_truth)[0, :, :, :])
+      save_image(self.corrupt(self.ground_truth)[0, :, :, :], f"Init corrupted {ctime()}.png")
       print("Shown.")
 
   def initialise_superres(self, input_dim):

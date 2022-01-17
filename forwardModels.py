@@ -79,7 +79,7 @@ class ForwardFillMask(ForwardAbstract):
     #print('type(self.mask)', type(self.mask))
 
     whiteFill = torch.ones(x.shape, device=self.device, dtype=x.dtype)
-    # print(self.mask.shape, whiteFill.shape, x.shape)
+    # print(self.mask.shape, whiteFill.shape, x.shape)s
     xFill = torch.where(self.mask, whiteFill, x) # if true, then whiteFill, else x
 
     return xFill
