@@ -17,7 +17,7 @@ Feel free to get in contact with the primary author with any issues.
 
 ## Requirements
 
-Our method, BRGM, builds on the StyleGAN-ADA Pytorch codebase, so our requirements are the same as for [StyleGAN2 Pytorch](https://github.com/NVlabs/stylegan2-ada-pytorch):
+Our method, L-BRGM, like the BRGM method, builds on the StyleGAN-ADA Pytorch codebase, so our requirements are the same as for [StyleGAN2 Pytorch](https://github.com/NVlabs/stylegan2-ada-pytorch):
 * 64-bit Python 3.7 and PyTorch 1.7.1. See [https://pytorch.org/](https://pytorch.org/) for PyTorch install instructions.
 * CUDA toolkit 11.0 or later.  Use at least version 11.1 if running on RTX 3090. If version 11 is not available, the implementation should still work.
 * The folder `images1024x1024` from the FFHQ dataset (currently hosted on [drive](https://drive.google.com/drive/folders/1u2xu7bSrWxrbUxk-dT-UvEJq8IjdmNTP). Note that shortcuts the folder can be used if working in colab to save lots of downloading).
@@ -32,12 +32,14 @@ For further options, call `python3 run.py --help`.
 To run a superresolution experiment, run
 
 ```
-python3 run.py --device=cuda:3 --outpath=mynew256to1024 --fpaths=faces/superres/truelow0.png --fpath-corrupted=True --reconstruction-type=superres --input-dim=64 --model=LBRGM
+python3 run.py --device=cuda --outpath=my_outpath --fpaths=faces/superres/truelow0.png --fpath-corrupted=True --reconstruction-type=superres --input-dim=64 --model=LBRGM
 ```
 
 ### Inpainting 
 
-@TODO
+```
+python3 run.py --device=cuda --outpath=my_outpath --fpaths=faces/inpaint/ffhq-1659.png --fpath-corrupted=False --reconstruction-type=inpaint --model=LBRGM --mask=masks/1024x1024/0.png
+```
 
 <!-- * Python libraries: `pip install click requests tqdm pyspng ninja imageio-ffmpeg==0.4.3`.  We use the Anaconda3 2020.11 distribution which installs most of these by default. -->
 <!-- * 1&ndash;8 high-end NVIDIA GPUs with at least 12 GB of memory. We have done all testing and development using NVIDIA DGX-1 with 8 Tesla V100 GPUs. -->

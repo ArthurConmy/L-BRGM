@@ -30,13 +30,17 @@ def get_testable_fpaths():
 @click.option('--reconstruction-type', type=click.Choice(['inpaint', 'superres'],), help='Corruption process: either inpainting or superresolution.')
 @click.option('--input-dim', default=64, help='Height and width of input image to have super-resolution applied')
 @click.option('--fpath-corrupted', default=True, help='Whether the input image has already had the corruption applied.')
-def run(device, fpaths, outpath, no_steps, reconstruction_type, input_dim, fpath_corrupted, model):
+@click.option('--mask', help='Specify path to the mask to be applied. See masks/1024x1024/ directory for masks')
+def run(device, fpaths, outpath, no_steps, reconstruction_type, input_dim, fpath_corrupted, model, mask):
   best_lpips = {}
   if not os.path.exists(outpath): os.mkdir(outpath)
   
   if reconstruction_type == 'superres':
     assert 1024 % input_dim == 0, "Input dimension need be a divisor of 1024, the height/width of images we can generate"
     assert input_dim is not None, "Specify an input dimension"
+
+  if reconstruction_type == 'inpaint':
+    assert mask is not None, "Specify a mask to apply. See "
 
   for i, fpath in enumerate(fpaths):
     print('-'*50)
@@ -56,6 +60,7 @@ def run(device, fpaths, outpath, no_steps, reconstruction_type, input_dim, fpath
       "fpath_corrupted" : fpath_corrupted, 
       "reconstruction_type" : reconstruction_type, 
       "input_dim" : input_dim,
+      "mask_file" : mask,
     }
 
     model = MODELS[model](**model_args)

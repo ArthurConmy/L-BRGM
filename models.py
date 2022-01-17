@@ -12,10 +12,11 @@ import PIL.Image as Image
 import torch.nn.functional as F
 import lpips
 from skimage.metrics import structural_similarity as ssim
-from forwardModels import ForwardFillMask, ForwardFillMask
+from forwardModels import ForwardFillMask
+import skimage.io
 
 class Reconstructer(torch.nn.Module, ABC):
-  def __init__(self, fname, verbose = True, im_verbose = True, out_dir = "", hollow=False, trial_no = -1, indx = 0, device=None, fpath_corrupted=False, reconstruction_type='superres', input_dim=None, lossprint_interval=1):
+  def __init__(self, fname, verbose = True, im_verbose = True, out_dir = "", hollow=False, trial_no = -1, indx = 0, device=None, fpath_corrupted=False, mask_file=None, reconstruction_type='superres', input_dim=None, lossprint_interval=1):
     
     """
     Parameters:
@@ -27,6 +28,7 @@ class Reconstructer(torch.nn.Module, ABC):
     self.fpath_corrupted = fpath_corrupted
     self.indx = indx
     self.corrupter = None
+    self.mask_file = mask_file
 
     self.out_dir = out_dir
     if len(self.out_dir) != 0 and self.out_dir[-1] != "/": self.out_dir += "/"
@@ -169,11 +171,11 @@ class Reconstructer(torch.nn.Module, ABC):
   def test_ground_truth(self):
     if self.im_verbose:
       print("This should be the ground truth:")
-      save_image(self.ground_truth[0, :, :, :], f"Init ground truth{ctime()}.png")
+      save_image(self.ground_truth[0, :, :, :], f"{self.out_dir}/Init ground truth{ctime()}.png")
       print("Shown.")
 
       print("This should be the corrupted face!")
-      save_image(self.corrupt(self.ground_truth)[0, :, :, :], f"Init corrupted {ctime()}.png")
+      save_image(self.corrupt(self.ground_truth)[0, :, :, :], f"{self.out_dir}/Init corrupted {ctime()}.png")
       print("Shown.")
 
   def initialise_superres(self, input_dim):
@@ -183,17 +185,18 @@ class Reconstructer(torch.nn.Module, ABC):
     self.get_lpips = self.get_lpips_sr
 
   def initialise_inpaint(self):    
-    print(self.device, "is our device")
-    self.mask = ForwardFillMask(self.device)
-    self.mask.mask = torch.load("halfmask.pt").to(self.device)
-    self.corrupter = self.mask
+    # self.mask = ForwardFillMask(self.device)
+    # self.mask.mask = torch.load("halfmask.pt").to(self.device)
+    # print("MASK SHAPE", self.mask.mask.shape)
+    # print(self.mask.mask[0,0,0,0], self.mask.mask[0,0,1023,1023])
+    # self.corrupter = self.mask
 
-    # generation of other masks
-    # print(self.mask.mask[0, :, 0, 0])
-    # print(self.mask.mask[0, :, 1023, 1023])
-    # for i in range(767):
-    #   for j in range(1024): 
-    #     self.mask.mask[0, :, j, i] = self.mask.mask[0, :, 0, 0]
+    mask = skimage.io.imread(self.mask_file)
+    mask = mask[:, :, 0] == np.min(mask[:, :, 0])
+
+    mask = np.reshape(mask, (1, 1, mask.shape[0], mask.shape[1]))
+    self.corrupter = ForwardFillMask(self.device)
+    self.corrupter.mask = torch.tensor(np.repeat(mask, 3, axis=1), dtype=torch.bool, device=self.device)
 
   def corrupt(self, tens, is_ground_truth=False): ## corrupt the tensor tens
     assert self.corrupter is not None, "No corruption initialised. Need reconstruction type \"superres\" or \"inpaint\""
@@ -343,7 +346,7 @@ class Reconstructer(torch.nn.Module, ABC):
     if self.im_verbose: self.show_generated()
     ## show_from_raw_g_synthesis(synth_images, False)
     synth_images = (synth_images + 1) * (255 / 2)
-    synth_images_down = self.corrupt(synth_images)
+    synth_images_down = self.corrupter(synth_images)
 
     loss, true_loss_log_entry, log_loss_entry = self.model_losses(synth_images_down)
     self.loss_log.append(log_loss_entry)
@@ -509,11 +512,11 @@ class BRGM(Reconstructer):
     # self.cur_lpips = self.get_lpips(
     
     return {"total" : loss.item(),
-                          "pixelwise" : self.blambda_pix * pixelwise_loss.item(),
-                          "perceptual" : self.blambda_perc * perceptual_loss.item(),
-                          "w" : self.blambda_w * w_loss.item(),
-                          "cosine" : self.blambda_c * cosine_loss.item(),
-                        #   "lpips" : self.cur_lpips}
+    "pixelwise" : self.blambda_pix * pixelwise_loss.item(),
+    "perceptual" : self.blambda_perc * perceptual_loss.item(),
+    "w" : self.blambda_w * w_loss.item(),
+    "cosine" : self.blambda_c * cosine_loss.item(),
+    # "lpips" : self.cur_lpips}
     }
     
 class LBRGM(Reconstructer):
@@ -594,7 +597,6 @@ class LBRGM(Reconstructer):
     }
     
   def model_losses(self, synth_images_down):
-
     pixelwise_loss = (synth_images_down - self.target).square().mean()
 
     loss = 0.0
@@ -643,8 +645,9 @@ class LBRGM(Reconstructer):
       loss_log_entry["ssim"]=self.get_ssim()
     return loss, true_loss_log_entry, loss_log_entry
 
-#   def initialise_corrupt(self):
-#     self.mask = ForwardFillMask(self.device)
+  def initialise_corrupt(self):
+    self.mask = ForwardFillMask(self.device)
+
 #     self.mask.mask = torch.load("halfmask.pt")
 #     # generation of other masks
 #     # print(self.mask.mask[0, :, 0, 0])
