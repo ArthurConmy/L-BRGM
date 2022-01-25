@@ -13,7 +13,7 @@ This repository is an implementation of the *L-BRGM* model introduced in [our pa
 
 Currently, the code supports super-resolution and inpainting of faces formatted to the FFHQ dataset standard.
 
-Feel free to get in contact with the primary author with any issues.
+Feel free to create a GitHub issue, or get in contact with the primary author with any issues.
 
 ## Requirements
 
@@ -21,7 +21,7 @@ Our method, L-BRGM, like the BRGM method, builds on the StyleGAN-ADA Pytorch cod
 * 64-bit Python 3.7 and PyTorch 1.7.1. See [https://pytorch.org/](https://pytorch.org/) for PyTorch install instructions.
 * CUDA toolkit 11.0 or later.  Use at least version 11.1 if running on RTX 3090. If version 11 is not available, the implementation should still work.
 * The folder `images1024x1024` from the FFHQ dataset (currently hosted on [drive](https://drive.google.com/drive/folders/1u2xu7bSrWxrbUxk-dT-UvEJq8IjdmNTP). Note that shortcuts the folder can be used if working in colab to save lots of downloading).
-* Download the pre-trained model `ffhq.pkl` (available [here](https://dl.dropboxusercontent.com/s/jlgybz6nfhmpv54/ffhq.pkl)) and save in the main directory.
+* Run `make downloadNet`. This will download the pre-trained model `ffhq.pkl` (available [here](https://dl.dropboxusercontent.com/s/jlgybz6nfhmpv54/ffhq.pkl)) into the main directory.
 
 ## Usage
 
