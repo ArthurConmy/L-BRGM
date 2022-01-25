@@ -20,8 +20,15 @@ Feel free to create a GitHub issue, or get in contact with the primary author wi
 Our method, L-BRGM, like the BRGM method, builds on the StyleGAN-ADA Pytorch codebase, so our requirements are the same as for [StyleGAN2 Pytorch](https://github.com/NVlabs/stylegan2-ada-pytorch):
 * 64-bit Python 3.7 and PyTorch 1.7.1. See [https://pytorch.org/](https://pytorch.org/) for PyTorch install instructions.
 * CUDA toolkit 11.0 or later.  Use at least version 11.1 if running on RTX 3090. If version 11 is not available, the implementation should still work.
-* The folder `images1024x1024` from the FFHQ dataset (currently hosted on [drive](https://drive.google.com/drive/folders/1u2xu7bSrWxrbUxk-dT-UvEJq8IjdmNTP). Note that shortcuts the folder can be used if working in colab to save lots of downloading).
+<!-- * The folder `images1024x1024` from the FFHQ dataset (currently hosted on [drive](https://drive.google.com/drive/folders/1u2xu7bSrWxrbUxk-dT-UvEJq8IjdmNTP). Note that shortcuts the folder can be used if working in colab to save lots of downloading). -->
 * Run `make downloadNet`. This will download the pre-trained model `ffhq.pkl` (available [here](https://dl.dropboxusercontent.com/s/jlgybz6nfhmpv54/ffhq.pkl)) into the main directory.
+
+```
+python3 -m venv lbrgm 
+source lbrgm/bin/activate
+pip3 install torch==1.10.1+cu113 torchvision==0.11.2+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html
+pip3 install click requests tqdm pyspng ninja imageio-ffmpeg==0.4.3 imageio scikit-image opencv-python pyro-ppl lpips
+```
 
 ## Usage
 
