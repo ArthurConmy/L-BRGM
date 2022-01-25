@@ -4,6 +4,8 @@
 &nbsp;
 &nbsp;
 
+*note: the entire code for our work, will be released on publication at the IEEE ICASSP 2022 conference. See the [important dates](https://2022.ieeeicassp.org/important_dates.php)*
+
 ![diagram](https://i.imgur.com/owOS2K3.jpg)
 
 # StyleGAN-induced data-driven regularization for inverse problems <!-- # STYLEGAN-INDUCED DATA-DRIVEN REGULARIZATION FOR in PROBLEMS -->
@@ -22,6 +24,8 @@ Our method, L-BRGM, like the BRGM method, builds on the StyleGAN-ADA Pytorch cod
 * CUDA toolkit 11.0 or later.  Use at least version 11.1 if running on RTX 3090. If version 11 is not available, the implementation should still work.
 <!-- * The folder `images1024x1024` from the FFHQ dataset (currently hosted on [drive](https://drive.google.com/drive/folders/1u2xu7bSrWxrbUxk-dT-UvEJq8IjdmNTP). Note that shortcuts the folder can be used if working in colab to save lots of downloading). -->
 * Run `make downloadNet`. This will download the pre-trained model `ffhq.pkl` (available [here](https://dl.dropboxusercontent.com/s/jlgybz6nfhmpv54/ffhq.pkl)) into the main directory.
+
+Currently untested:
 
 ```
 python3 -m venv lbrgm 
