@@ -634,29 +634,3 @@ class LBRGM(Reconstructer):
 
   def initialise_corrupt(self):
     self.mask = ForwardFillMask(self.device)
-
-#     self.mask.mask = torch.load("halfmask.pt")
-#     # generation of other masks
-#     # print(self.mask.mask[0, :, 0, 0])
-#     # print(self.mask.mask[0, :, 1023, 1023])
-#     # for i in range(767):
-#     #   for j in range(1024): 
-#     #     self.mask.mask[0, :, j, i] = self.mask.mask[0, :, 0, 0]
-#     # self.downres = ForwardDownsample(factor=16).to(self.device)
-#     # self.downres, _ = constructForwardModel("super-resolution", self.G.img_resolution, self.G.img_channels, None, self.fname, ## I guess ...
-#                                       #  1 / 8, 0, self.device)
-
-#   def corrupt(self, tens):
-#     # return self.downres(tens)
-#     return self.mask(tens)
-
-    # self.mask = ForwardFillMask(self.device)
-    # self.mask.mask = torch.load("halfmask.pt", map_location=self.device) # or halfmask.pt
-    
-    # smol_mask = torch.BoolTensor(1, 3, 1024, 1024).fill_(False)
-    # smol_mask[0,:,200:500,200:500].fill_(True)
-    # smol_mask = smol_mask.to(self.device)
-    # torch.save(smol_mask, "eyepatch.pt")
-    # self.mask.mask = smol_mask.to(self.device)
-    # print(smol_mask[0][0][0][0])
-    # # print(smol_mask.shape)
