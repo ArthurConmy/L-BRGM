@@ -1,5 +1,4 @@
 import os
-import nacl
 from models import BRGM, LBRGM
 import torch
 import json
@@ -68,13 +67,6 @@ def run(device, fpaths, outpath, no_steps, reconstruction_type, input_dim, fpath
     model.lossprint_interval = 250
     model.learning_rate = 0.1
     model.train_model(max_steps=no_steps)
-
-    # with open(cur_outdir + f'image{i}.json', 'w') as f:
-    #   brgmll = json.dump(brgm.loss_log, f)
-
-    # with open(cur_outdir + f'image{i}full.json', 'w') as f:
-    #   brgmllf = json.dump(brgm.true_loss_log, f)
-    # continue
 
 if __name__ == "__main__":
   run()

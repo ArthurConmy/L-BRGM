@@ -29,7 +29,7 @@ Currently untested:
 python3 -m venv lbrgm 
 source lbrgm/bin/activate
 pip3 install torch==1.10.1+cu113 torchvision==0.11.2+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html
-pip3 install click requests tqdm pyspng ninja imageio-ffmpeg==0.4.3 imageio scikit-image opencv-python pyro-ppl lpips
+pip3 install click requests tqdm pyspng ninja imageio-ffmpeg==0.4.3 imageio scikit-image opencv-python pyro-ppl lpips matplotlib
 ```
 
 ## Usage
@@ -41,7 +41,7 @@ For further options, call `python3 run.py --help`.
 To run a superresolution experiment, run
 
 ```
-python3 run.py --device=cuda --outpath=my_outpath --fpaths=faces/superres/truelow0.png --fpath-corrupted=True --reconstruction-type=superres --input-dim=64 --model=LBRGM
+python3 run.py --device=cuda --outpath=MY_OUTPATH --fpaths=faces/superres/truelow0.png --fpath-corrupted=True --reconstruction-type=superres --input-dim=64 --model=LBRGM
 ```
 
 ### Inpainting 

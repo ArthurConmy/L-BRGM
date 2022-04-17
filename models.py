@@ -170,13 +170,15 @@ class Reconstructer(torch.nn.Module, ABC):
       
   def test_ground_truth(self):
     if self.im_verbose:
-      print("This should be the ground truth:")
-      save_image(self.ground_truth[0, :, :, :], f"{self.out_dir}/Init ground truth{ctime()}.png")
-      print("Shown.")
+      fname = f"{self.out_dir}/ground truth at {ctime()}.png"
+      print(f"Showing (!) the ground truth as {fname} ...", end="")
+      save_image_show(self.ground_truth[0, :, :, :]) ## , fname)
+      print(" done.")
 
-      print("This should be the corrupted face!")
-      save_image(self.corrupt(self.ground_truth)[0, :, :, :], f"{self.out_dir}/Init corrupted {ctime()}.png")
-      print("Shown.")
+      fname = f"{self.out_dir}/corrupted at {ctime()}.png" 
+      print(f"Saving the corrputed image as {fname} ...", end="")
+      save_image(self.corrupt(self.ground_truth)[0, :, :, :], fname)
+      print(" done.")
 
   def initialise_superres(self, input_dim):
     print(input_dim / 1024)
@@ -185,12 +187,6 @@ class Reconstructer(torch.nn.Module, ABC):
     self.get_lpips = self.get_lpips_sr
 
   def initialise_inpaint(self):    
-    # self.mask = ForwardFillMask(self.device)
-    # self.mask.mask = torch.load("halfmask.pt").to(self.device)
-    # print("MASK SHAPE", self.mask.mask.shape)
-    # print(self.mask.mask[0,0,0,0], self.mask.mask[0,0,1023,1023])
-    # self.corrupter = self.mask
-
     mask = skimage.io.imread(self.mask_file)
     mask = mask[:, :, 0] == np.min(mask[:, :, 0])
 
@@ -362,10 +358,6 @@ class Reconstructer(torch.nn.Module, ABC):
 
   def train_model(self, timeout = 1e9, max_steps = 1e9, save_the_merged = False):
     self.max_steps=max_steps
-    # if len(self.zparams) == 0:
-    # opt = torch.optim.Adam([self.z, self.w], betas=(self.beta1, self.beta2), lr = 0.1) ## self.learning_rate)
-
-    # else:
 
     adam_list = [{"params": [self.w], "lr": self.w_lr}]
 
@@ -373,9 +365,6 @@ class Reconstructer(torch.nn.Module, ABC):
         adam_list.append({"params": [self.z], "lr": self.z_lr})
 
     opt = torch.optim.Adam(adam_list)
-
-    # opt_z = torch.optim.Adam([self.z], lr=self.z_lr)
-    # opt_w = torch.optim.Adam([self.w], lr=self.w_lr)
 
     self.loss_log = []
     self.true_loss_log = []
@@ -404,8 +393,6 @@ class Reconstructer(torch.nn.Module, ABC):
 
 class BRGM(Reconstructer):
   def __init__(self, *args, **kwargs):
-    print(isinstance(self, BRGM), isinstance(self, LBRGM))
-    print(f"*args: {args}, **kwargs: {kwargs}")
     super().__init__(*args, **kwargs)    
     self.beta1 = 0.9
     self.beta2 = 0.999
