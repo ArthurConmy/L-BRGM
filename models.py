@@ -596,7 +596,7 @@ class LBRGM(Reconstructer):
 
     mse_loss = 0.0
     w_samples = self.G.mapping(self.z, None)  # [N, L, C]
-    mse_loss += (w_samples - self.w).square().mean() ## MSE <- it is this key line that causes the optimization to go funny !!!
+    mse_loss += (w_samples - self.w).square().mean()
     loss += self.lambda_mse * mse_loss
 
     norm_loss = 0.0
