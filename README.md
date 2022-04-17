@@ -4,8 +4,6 @@
 &nbsp;
 &nbsp;
 
-*note: the entire code for our work, will be released on publication at the IEEE ICASSP 2022 conference. See the [important dates](https://2022.ieeeicassp.org/important_dates.php)*
-
 ![diagram](https://i.imgur.com/owOS2K3.jpg)
 
 # StyleGAN-induced data-driven regularization for inverse problems <!-- # STYLEGAN-INDUCED DATA-DRIVEN REGULARIZATION FOR in PROBLEMS -->
