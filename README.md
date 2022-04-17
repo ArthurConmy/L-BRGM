@@ -15,6 +15,8 @@ Currently, the code supports super-resolution and inpainting of faces formatted 
 
 Feel free to create a GitHub issue, or get in contact with the primary author with any issues.
 
+There is a colab demo of the project that's available <a href="https://colab.research.google.com/drive/17FqnmZIVkb9VTnbOer8yUfiGbqOVtZEo?usp=sharing">here</a>.
+
 ## Requirements
 
 Our method, L-BRGM, like the BRGM method, builds on the StyleGAN-ADA Pytorch codebase, so our requirements are the same as for [StyleGAN2 Pytorch](https://github.com/NVlabs/stylegan2-ada-pytorch):
