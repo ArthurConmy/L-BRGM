@@ -138,7 +138,7 @@ class Reconstructer(torch.nn.Module, ABC):
     else:
       self.target = self.corrupt(self.ground_truth)
 
-    self.target_pm1 = (self.ground_truth / (255 / 2)) - 1.0
+    self.target_pm1 = (self.target / (255 / 2)) - 1.0
     if self.fpath_corrupted:
       self.target_pm1_down = self.target_pm1  
 
