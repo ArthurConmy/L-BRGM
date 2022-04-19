@@ -207,9 +207,9 @@ class Reconstructer(torch.nn.Module, ABC):
     pass
   def get_current_reconstruction_pm1(self):
     return self.G.synthesis(self.w.detach().clone(), noise_mode='const').detach().clone()
-  def get_current_reconstruction_pm1_256(self):
+  def get_current_reconstruction_pm1_corrupted(self):
     cur = self.get_current_reconstruction_pm1()
-    cur = F.interpolate(cur, scale_factor=0.25)
+    cur = self.corrupter(cur)
     return cur
   def get_current_merged_pm1(self):
     synth_images = self.G.synthesis(self.w.detach().clone(), noise_mode='const')  # G(w)
@@ -289,13 +289,13 @@ class Reconstructer(torch.nn.Module, ABC):
       return get_pm1_ssim(recon, truly)
 
   def get_lpips_sr(self):
-      recon = self.get_current_reconstruction_pm1_256()
+      recon = self.get_current_reconstruction_pm1_corrupted()
       truly = self.target_pm1_down
       print(recon.shape, truly.shape)
       return self.loss_fn_alex(recon, truly).item()
 
   def get_ssim_sr(self):
-      recon = self.get_current_reconstruction_pm1_256()
+      recon = self.get_current_reconstruction_pm1_corrupted()
       truly = self.target_pm1_down
       return get_pm1_ssim(recon, truly)
 
